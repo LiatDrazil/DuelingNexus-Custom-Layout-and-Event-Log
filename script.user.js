@@ -5,6 +5,8 @@
 // @description  Streamlined layout script with collapsible Event Log and table reordering.
 // @author       LiatDrazil
 // @match        https://duelingnexus.com/duel/*
+// @downloadURL  https://raw.githubusercontent.com/LiatDrazil/DuelingNexus-Custom-Layout-and-Event-Log/main/script.user.js
+// @updateURL    https://raw.githubusercontent.com/LiatDrazil/DuelingNexus-Custom-Layout-and-Event-Log/main/script.user.js
 // @grant        none
 // @run-at       document-end
 // ==/UserScript==
@@ -115,14 +117,14 @@
         if (!header) {
             header = document.createElement("div");
             header.className = "custom-toggle-header";
-
+            
             const title = document.createElement("span");
             title.innerText = "Event Log";
-
+            
             const closeBtn = document.createElement("button");
             closeBtn.className = "custom-toggle-btn";
             closeBtn.innerText = "✕ Close";
-
+            
             closeBtn.addEventListener('click', () => {
                 logElement.classList.add('log-closed');
                 createReopenButton();
