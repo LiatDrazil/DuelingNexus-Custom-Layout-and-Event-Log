@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Dueling Nexus - Custom Layout & Event Log
 // @namespace    https://github.com/LiatDrazil
-// @version      1.3
-// @description  Streamlined layout script with collapsible Event Log and table reordering.
+// @version      1.5
+// @description  Streamlined layout script with collapsible Event Log, table reordering, and fixed scroll position.
 // @author       LiatDrazil
 // @match        https://duelingnexus.com/duel/*
 // @downloadURL  https://raw.githubusercontent.com/LiatDrazil/DuelingNexus-Custom-Layout-and-Event-Log/main/script.user.js
@@ -134,6 +134,25 @@
             header.appendChild(closeBtn);
             logElement.insertBefore(header, logElement.firstChild);
         }
+
+        const scrollContainer = logElement.querySelector("div:not(.custom-toggle-header)") || logElement;
+
+        // Bloqueia qualquer tentativa do site de puxar o scroll para cima/baixo sozinha se o usuário estiver lendo algo acima
+        let userHasScrolledUp = false;
+
+        scrollContainer.addEventListener('scroll', () => {
+            const threshold = 40;
+            const isAtBottom = (scrollContainer.scrollHeight - scrollContainer.scrollTop - scrollContainer.clientHeight) <= threshold;
+            userHasScrolledUp = !isAtBottom;
+        });
+
+        const observer = new MutationObserver(() => {
+            if (!userHasScrolledUp) {
+                scrollContainer.scrollTop = scrollContainer.scrollHeight;
+            }
+        });
+
+        observer.observe(scrollContainer, { childList: true, subtree: true });
 
         logElement.dataset.toggleInitialized = "true";
     }
