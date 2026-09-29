@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Dueling Nexus - Custom Layout & Event Log
 // @namespace    https://github.com/LiatDrazil
-// @version      1.2
-// @description  Streamlined layout script with collapsible Event Log, table reordering, and colored log entries.
+// @version      1.3
+// @description  Streamlined layout script with collapsible Event Log and table reordering.
 // @author       LiatDrazil
 // @match        https://duelingnexus.com/duel/*
 // @downloadURL  https://raw.githubusercontent.com/LiatDrazil/DuelingNexus-Custom-Layout-and-Event-Log/main/script.user.js
@@ -117,14 +117,14 @@
         if (!header) {
             header = document.createElement("div");
             header.className = "custom-toggle-header";
-            
+
             const title = document.createElement("span");
             title.innerText = "Event Log";
-            
+
             const closeBtn = document.createElement("button");
             closeBtn.className = "custom-toggle-btn";
             closeBtn.innerText = "✕ Close";
-            
+
             closeBtn.addEventListener('click', () => {
                 logElement.classList.add('log-closed');
                 createReopenButton();
@@ -171,34 +171,7 @@
         document.body.appendChild(reopenBtn);
     }
 
-    // Colors incoming game log entries based on whether they mention the player or opponent.
-    function colorizeGameLogs() {
-        const playerNameEl = document.querySelector("#game-player-name");
-        const opponentNameEl = document.querySelector("#game-opponent-name");
-        
-        if (!playerNameEl || !opponentNameEl) return;
-
-        const playerName = playerNameEl.innerText.trim();
-        const opponentName = opponentNameEl.innerText.trim();
-
-        if (!playerName || !opponentName) return;
-
-        const logEntries = document.querySelectorAll('.game-log-entry:not(.colorized)');
-        logEntries.log = true; // helper flag if needed, but not required
-        logEntries.forEach(entry => {
-            const text = entry.innerText || "";
-            
-            if (text.includes(playerName)) {
-                entry.style.color = '#58a6ff'; // Blue for player
-                entry.classList.add('colorized');
-            } else if (text.includes(opponentName)) {
-                entry.style.color = '#ff7b72'; // Red for opponent
-                entry.classList.add('colorized');
-            }
-        });
-    }
-
-    // Safely apply structural DOM modifications and observe log entries instantly via MutationObserver.
+    // Safely apply structural DOM modifications once elements load.
     const applyModifications = setInterval(() => {
         const table3 = document.querySelector("#game-field > tbody > tr > td:nth-child(3) > table");
         const table1 = document.querySelector("#game-field > tbody > tr > td:nth-child(1) > table");
@@ -222,11 +195,6 @@
             if (originalEventLogBtn) originalEventLogBtn.remove();
 
             setupEventLogPanel(logElement);
-
-            // Instantly colorize existing entries and observe future updates with zero delay
-            colorizeGameLogs();
-            const observer = new MutationObserver(() => colorizeGameLogs());
-            observer.observe(logElement, { childList: true, subtree: true });
 
             clearInterval(applyModifications);
         }
