@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Dueling Nexus - Custom Layout & Event Log
 // @namespace    https://github.com/LiatDrazil
-// @version      3.17
-// @description  Mirrored Event Log panel and stable table reordering.
+// @version      3.22
+// @description  Right-side Event Log panel and stable table reordering.
 // @author       LiatDrazil
 // @match        https://duelingnexus.com/duel/*
 // @match        https://duelingnexus.com/handtestmode*
@@ -60,6 +60,16 @@
             box-sizing: border-box !important;
         }
 
+        #card-column-header-content .game-card-tab {
+            display: flex !important;
+        }
+
+        #card-column-header-content .game-card-tab-button {
+            flex: 1 1 0 !important;
+            float: none !important;
+            width: auto !important;
+        }
+
         #game-column {
             display: flex !important;
             justify-content: flex-start !important;
@@ -95,21 +105,21 @@
             overflow: hidden !important;
         }
 
-        #custom-right-panel-log-content::-webkit-scrollbar {
+        #custom-right-panel #game-event-log-content::-webkit-scrollbar {
             width: auto !important;
             height: auto !important;
         }
 
-        #custom-right-panel-log-content::-webkit-scrollbar-track {
+        #custom-right-panel #game-event-log-content::-webkit-scrollbar-track {
             background: rgba(51, 51, 51, 0) !important;
         }
 
-        #custom-right-panel-log-content::-webkit-scrollbar-thumb {
+        #custom-right-panel #game-event-log-content::-webkit-scrollbar-thumb {
             background: rgb(109, 28, 180) !important;
             border-radius: 999px !important;
         }
 
-        #custom-right-panel #custom-right-panel-log {
+        #custom-right-panel #game-event-log {
             position: relative !important;
             display: flex !important;
             flex: 1 1 auto !important;
@@ -121,7 +131,7 @@
             opacity: 1 !important;
         }
 
-        #custom-right-panel #custom-right-panel-log-content {
+        #custom-right-panel #game-event-log-content {
             box-sizing: border-box !important;
             width: 100% !important;
             height: 100% !important;
@@ -147,10 +157,49 @@
             text-align: center !important;
         }
 
-        #game-field .empty-game-field-zone-full .game-life-bar,
-        #game-field .empty-game-field-zone-full .game-life-bar-part {
+        #game-field .empty-game-field-zone-full .game-avatar-area.game-avatar-left {
+            transform: translateY(var(--custom-player-status-offset, 0px)) !important;
+        }
+
+        #game-field .empty-game-field-zone-full .game-life-bar {
             margin-left: auto !important;
             margin-right: auto !important;
+        }
+
+        #game-field .empty-game-field-zone-full #game-life-bar-player,
+        #game-field .empty-game-field-zone-full #game-life-bar-opponent {
+            display: flex !important;
+            justify-content: flex-start !important;
+        }
+
+        #game-field .empty-game-field-zone-full #game-life-bar-player .game-life-bar-part,
+        #game-field .empty-game-field-zone-full #game-life-bar-opponent .game-life-bar-part {
+            margin: 0 !important;
+        }
+
+        #game-field .empty-game-field-zone-full #game-timer-player,
+        #game-field .empty-game-field-zone-full #game-timer-opponent {
+            display: inline-block !important;
+            width: 44px !important;
+            height: 16px !important;
+            line-height: 16px !important;
+            box-sizing: border-box !important;
+            text-align: center !important;
+            vertical-align: top !important;
+        }
+
+        #game-field .empty-game-field-zone-full #game-timer-bar-player,
+        #game-field .empty-game-field-zone-full #game-timer-bar-opponent {
+            display: block !important;
+            height: 12px !important;
+            box-sizing: border-box !important;
+        }
+
+        #game-field .empty-game-field-zone-full #game-timer-player[style*="display: none"],
+        #game-field .empty-game-field-zone-full #game-timer-opponent[style*="display: none"],
+        #game-field .empty-game-field-zone-full #game-timer-bar-player[style*="display: none"],
+        #game-field .empty-game-field-zone-full #game-timer-bar-opponent[style*="display: none"] {
+            visibility: hidden !important;
         }
 
         #game-field .empty-game-field-zone-full #game-force-chain-button,
@@ -249,28 +298,23 @@
         logElement.dataset.toggleInitialized = "true";
     }
 
-    let logMirrorObserver;
-    let rightLogUserScrolledUp = false;
+    function removeEventLogTab() {
+        const eventLogButton = Array.from(
+            document.querySelectorAll("#card-column-header-content .game-card-tab-button")
+        ).find((button) =>
+            button.textContent.replace(/\s+/g, " ").trim().toLowerCase() === "event log"
+        );
+        if (!eventLogButton) return;
 
-    function syncRightLog(sourceLog, logMirror) {
-        const sourceContent = sourceLog.querySelector("#game-event-log-content");
-        const mirrorContent = logMirror.querySelector("#custom-right-panel-log-content");
-        if (!sourceContent || !mirrorContent) return;
-
-        const scrollTop = mirrorContent.scrollTop;
-        mirrorContent.replaceChildren(...Array.from(sourceContent.childNodes, (node) => node.cloneNode(true)));
-        removeUndefinedEntries(mirrorContent);
-
-        if (!rightLogUserScrolledUp) {
-            mirrorContent.scrollTop = mirrorContent.scrollHeight;
-        } else {
-            mirrorContent.scrollTop = scrollTop;
+        if (eventLogButton.classList.contains("game-card-tab-button-active")) {
+            document.getElementById("game-button-card-info")?.click();
         }
+        eventLogButton.remove();
     }
 
     function setupRightPanel(logElement, shouldShow) {
         let panel = document.getElementById("custom-right-panel");
-        if (!shouldShow || !logElement) {
+        if (!logElement) {
             if (panel) panel.hidden = true;
             return;
         }
@@ -281,39 +325,16 @@
 
             const body = document.createElement("div");
             body.id = "custom-right-panel-body";
-
-            const logMirror = logElement.cloneNode(true);
-            logMirror.id = "custom-right-panel-log";
-            logMirror.removeAttribute("hidden");
-            logMirror.removeAttribute("data-toggle-initialized");
-            logMirror.classList.remove("log-closed");
-            logMirror.style.removeProperty("display");
-            const logContent = logMirror.querySelector("#game-event-log-content");
-            if (logContent) logContent.id = "custom-right-panel-log-content";
-            body.appendChild(logMirror);
-
             panel.appendChild(body);
             document.body.appendChild(panel);
-
-            const mirrorContent = logMirror.querySelector("#custom-right-panel-log-content");
-            if (mirrorContent) {
-                mirrorContent.addEventListener("scroll", () => {
-                    const distanceFromBottom = mirrorContent.scrollHeight
-                        - mirrorContent.scrollTop
-                        - mirrorContent.clientHeight;
-                    rightLogUserScrolledUp = distanceFromBottom > 40;
-                });
-            }
-
-            logMirrorObserver = new MutationObserver(() => syncRightLog(logElement, logMirror));
-            const sourceContent = logElement.querySelector("#game-event-log-content");
-            if (sourceContent) {
-                logMirrorObserver.observe(sourceContent, { childList: true, characterData: true, subtree: true });
-            }
-            syncRightLog(logElement, logMirror);
         }
 
-        panel.hidden = false;
+        const body = panel.querySelector("#custom-right-panel-body");
+        if (body && logElement.parentElement !== body) body.replaceChildren(logElement);
+        logElement.removeAttribute("hidden");
+        logElement.classList.remove("log-closed");
+        logElement.style.removeProperty("display");
+        panel.hidden = !shouldShow;
         setupEventLogPanel(logElement);
     }
 
@@ -354,6 +375,7 @@
 
     let observedPlayArea = null;
     let playAreaResizeObserver = null;
+    let lastPlayerStatusLayout = "";
 
     function updateGameFieldCenter() {
         if (!observedPlayArea) return;
@@ -365,6 +387,37 @@
         const fieldCenterY = Math.round(fieldBounds.top + fieldBounds.height / 2);
         document.documentElement.style.setProperty("--custom-field-center-x", `${fieldCenterX}px`);
         document.documentElement.style.setProperty("--custom-field-center-y", `${fieldCenterY}px`);
+
+        const playerStatus = document.querySelector(
+            "#game-field .empty-game-field-zone-full .game-avatar-area.game-avatar-left"
+        );
+        const opponentStatus = document.querySelector(
+            "#game-field .empty-game-field-zone-full .game-avatar-area.game-avatar-right"
+        );
+        if (playerStatus && opponentStatus) {
+            const playerBounds = playerStatus.getBoundingClientRect();
+            const opponentBounds = opponentStatus.getBoundingClientRect();
+            const currentOffset = Number.parseFloat(
+                getComputedStyle(document.documentElement)
+                    .getPropertyValue("--custom-player-status-offset")
+            ) || 0;
+            const topInset = opponentBounds.top - fieldBounds.top;
+            const playerBaseBottom = playerBounds.bottom - currentOffset;
+            const layoutKey = [
+                fieldBounds.top,
+                fieldBounds.bottom,
+                topInset,
+                playerBaseBottom
+            ].map((value) => Math.round(value)).join(":");
+            if (layoutKey === lastPlayerStatusLayout) return;
+
+            const offset = Math.round(fieldBounds.bottom - topInset - playerBaseBottom);
+            document.documentElement.style.setProperty(
+                "--custom-player-status-offset",
+                `${offset}px`
+            );
+            lastPlayerStatusLayout = layoutKey;
+        }
     }
 
     function observePlayArea(playArea) {
@@ -387,6 +440,7 @@
         const leftPanel = document.querySelector("#card-column");
         const leftPanelHeader = document.querySelector("#card-column-header-content .game-card-tab");
         const logElement = document.querySelector("#game-event-log");
+        removeEventLogTab();
         const leftPanelVisible = Boolean(
             leftPanel
             && leftPanelHeader
