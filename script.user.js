@@ -1,10 +1,11 @@
 // ==UserScript==
 // @name         Dueling Nexus - Custom Layout & Event Log
 // @namespace    https://github.com/LiatDrazil
-// @version      1.5
-// @description  Streamlined layout script with collapsible Event Log, table reordering, and fixed scroll position.
+// @version      3.17
+// @description  Mirrored Event Log panel and stable table reordering.
 // @author       LiatDrazil
 // @match        https://duelingnexus.com/duel/*
+// @match        https://duelingnexus.com/handtestmode*
 // @downloadURL  https://raw.githubusercontent.com/LiatDrazil/DuelingNexus-Custom-Layout-and-Event-Log/main/script.user.js
 // @updateURL    https://raw.githubusercontent.com/LiatDrazil/DuelingNexus-Custom-Layout-and-Event-Log/main/script.user.js
 // @grant        none
@@ -14,8 +15,6 @@
 (function() {
     'use strict';
 
-    const logWidth = '360px';
-
     // Inject core CSS styles for layout alignment, event log styling, and selection window centering.
     const css = `
         #game-container, #game-field {
@@ -24,120 +23,211 @@
             float: left !important;
         }
 
+        #game-field {
+            min-width: 0 !important;
+            max-width: none !important;
+            width: var(--custom-game-field-width, 1047px) !important;
+            height: max(748px, 83vh) !important;
+            margin: 0 0 0 15px !important;
+            box-sizing: border-box !important;
+        }
+
+        #game-field .game-field-zone,
+        #game-field .empty-game-field-zone {
+            width: 115.7px !important;
+            height: 115.7px !important;
+        }
+
+        #game-field .empty-game-field-zone-full {
+            width: 115.7px !important;
+        }
+
+        #game-field .empty-game-field-zone-full > table {
+            width: 100% !important;
+            min-width: 115.7px !important;
+        }
+
+        #game-field #game-field-middle,
+        #game-field #game-field-middle-container {
+            width: 580px !important;
+            min-width: 580px !important;
+        }
+
         #card-column {
             position: relative !important;
+            width: var(--custom-side-panel-width, 25vw) !important;
+            max-width: var(--custom-side-panel-width, 25vw) !important;
+            box-sizing: border-box !important;
         }
 
-        #game-event-log {
+        #game-column {
+            display: flex !important;
+            justify-content: flex-start !important;
+            width: max(0px, calc(100vw - 2 * var(--custom-side-panel-width, 25vw))) !important;
+            min-width: calc(var(--custom-game-field-width, 1047px) + 15px) !important;
+            padding-left: 0 !important;
+            box-sizing: border-box !important;
+        }
+
+        #custom-right-panel {
+            position: fixed !important;
+            top: 0 !important;
+            left: auto !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            width: var(--custom-right-panel-width, var(--custom-side-panel-width, 25vw)) !important;
+            z-index: 150 !important;
+            box-sizing: border-box !important;
             display: flex !important;
             flex-direction: column !important;
-            visibility: visible !important;
-            opacity: 1 !important;
-            position: fixed !important;
-            top: 20px !important;
-            right: 15px !important;
-            width: ${logWidth} !important;
-            height: calc(90vh - 20px) !important;
-            z-index: 99999 !important;
-            box-sizing: border-box !important;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6) !important;
-            border: 2px solid rgba(255, 255, 255, 0.2) !important;
-            border-radius: 6px !important;
-            background-color: rgba(30, 30, 30, 0.98) !important;
-            transition: opacity 0.2s ease, transform 0.2s ease;
+            overflow: hidden !important;
+            background-image: linear-gradient(rgba(18, 23, 36, 0.7) 0%, rgba(1, 1, 17, 0.7) 100%) !important;
+            border-left: 1px solid #777 !important;
         }
 
-        #game-event-log.log-closed {
+        #custom-right-panel[hidden] {
             display: none !important;
         }
 
-        #game-event-log > *:not(.custom-toggle-header) {
-            flex: 1 !important;
-            overflow-y: auto !important;
+        #custom-right-panel-body {
+            flex: 1 1 auto !important;
+            min-height: 0 !important;
+            overflow: hidden !important;
         }
 
-        .custom-toggle-header {
-            height: 32px !important;
-            background-color: rgba(45, 45, 45, 0.95) !important;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+        #custom-right-panel-log-content::-webkit-scrollbar {
+            width: auto !important;
+            height: auto !important;
+        }
+
+        #custom-right-panel-log-content::-webkit-scrollbar-track {
+            background: rgba(51, 51, 51, 0) !important;
+        }
+
+        #custom-right-panel-log-content::-webkit-scrollbar-thumb {
+            background: rgb(109, 28, 180) !important;
+            border-radius: 999px !important;
+        }
+
+        #custom-right-panel #custom-right-panel-log {
+            position: relative !important;
             display: flex !important;
-            align-items: center !important;
-            justify-content: space-between !important;
-            padding: 0 10px !important;
-            font-size: 12px !important;
-            color: #fff !important;
-            font-family: sans-serif !important;
-            user-select: none !important;
-            flex-shrink: 0 !important;
-            border-top-left-radius: 4px !important;
-            border-top-right-radius: 4px !important;
+            flex: 1 1 auto !important;
+            min-height: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            box-sizing: border-box !important;
+            visibility: visible !important;
+            opacity: 1 !important;
         }
 
-        .custom-toggle-btn {
-            background: #444 !important;
-            border: 1px solid #666 !important;
-            color: #fff !important;
-            padding: 2px 8px !important;
-            border-radius: 3px !important;
-            cursor: pointer !important;
-            font-size: 11px !important;
+        #custom-right-panel #custom-right-panel-log-content {
+            box-sizing: border-box !important;
+            width: 100% !important;
+            height: 100% !important;
+            margin: 0 !important;
+            padding: 7px !important;
+            background-color: transparent !important;
+            border: 1px solid #777 !important;
+            overflow-y: auto !important;
+            scrollbar-width: auto !important;
+            scrollbar-color: rgb(109, 28, 180) rgba(51, 51, 51, 0) !important;
         }
 
-        .custom-toggle-btn:hover {
-            background: #555 !important;
-        }
-
-        #game-field > tbody > tr > td:nth-child(1) > table,
-        #game-field > tbody > tr > td:nth-child(3) > table {
+        #game-field > tbody > tr > .empty-game-field-zone-full > table {
             height: 50% !important;
             box-sizing: border-box !important;
+        }
+
+        #game-field .empty-game-field-zone-full .game-avatar-area {
+            float: none !important;
+            width: 90px !important;
+            margin-left: auto !important;
+            margin-right: auto !important;
+            text-align: center !important;
+        }
+
+        #game-field .empty-game-field-zone-full .game-life-bar,
+        #game-field .empty-game-field-zone-full .game-life-bar-part {
+            margin-left: auto !important;
+            margin-right: auto !important;
+        }
+
+        #game-field .empty-game-field-zone-full #game-force-chain-button,
+        #game-field .empty-game-field-zone-full #game-cancel-button,
+        #game-field .empty-game-field-zone-full #game-reset-button,
+        #game-field .empty-game-field-zone-full #game-turn-display,
+        #game-field .empty-game-field-zone-full .game-phase-button {
+            display: block !important;
+            margin-left: auto !important;
+            margin-right: auto !important;
+        }
+
+        #game-field .empty-game-field-zone-full .game-turn-phase-container {
+            text-align: center !important;
+        }
+
+        #game-selection-window,
+        #game-yesno-window,
+        #game-position-window,
+        #game-option-window,
+        #game-announce-window,
+        #game-announce-card-window,
+        #game-rps-window {
+            position: fixed !important;
+            left: 50vw !important;
+            top: 50vh !important;
+            margin: 0 !important;
+            transform: translate(-50%, -50%) !important;
+            z-index: 400 !important;
+        }
+
+        #game-hint-window {
+            position: fixed !important;
+            left: var(--custom-field-center-x, 50%) !important;
+            margin: 0 !important;
+            transform: translateX(-50%) !important;
+            z-index: 400 !important;
         }
 
         #game-selection-window {
             width: 75% !important;
             max-width: 800px !important;
-            left: 48% !important;
-            top: 50% !important;
-            transform: translate(-50%, -50%) !important;
-            position: fixed !important;
             box-sizing: border-box !important;
         }
+
+        #game-next-turn {
+            left: var(--custom-field-center-x, 50%) !important;
+            top: var(--custom-field-center-y, 50%) !important;
+            transform: translate(-50%, -50%) !important;
+            z-index: 500 !important;
+        }
+
     `;
 
+    const previousStyle = document.getElementById('custom-layout-styles');
+    if (previousStyle) previousStyle.remove();
+
     const styleElement = document.createElement('style');
+    styleElement.id = 'custom-layout-styles';
     styleElement.type = 'text/css';
     styleElement.appendChild(document.createTextNode(css));
     (document.head || document.documentElement).appendChild(styleElement);
 
-    // Inject toggle header and close button into the Event Log.
+    function removeUndefinedEntries(container) {
+        Array.from(container.childNodes).forEach((entry) => {
+            const isBareUndefined = entry.textContent.trim() === 'undefined'
+                && (entry.nodeType === Node.TEXT_NODE
+                    || (entry.nodeType === Node.ELEMENT_NODE && entry.childElementCount === 0));
+
+            if (isBareUndefined) entry.remove();
+        });
+    }
+
     function setupEventLogPanel(logElement) {
         if (logElement.dataset.toggleInitialized === "true") return;
 
-        let header = logElement.querySelector(".custom-toggle-header");
-        if (!header) {
-            header = document.createElement("div");
-            header.className = "custom-toggle-header";
-
-            const title = document.createElement("span");
-            title.innerText = "Event Log";
-
-            const closeBtn = document.createElement("button");
-            closeBtn.className = "custom-toggle-btn";
-            closeBtn.innerText = "✕ Close";
-
-            closeBtn.addEventListener('click', () => {
-                logElement.classList.add('log-closed');
-                createReopenButton();
-            });
-
-            header.appendChild(title);
-            header.appendChild(closeBtn);
-            logElement.insertBefore(header, logElement.firstChild);
-        }
-
-        const scrollContainer = logElement.querySelector("div:not(.custom-toggle-header)") || logElement;
-
-        // Bloqueia qualquer tentativa do site de puxar o scroll para cima/baixo sozinha se o usuário estiver lendo algo acima
+        const scrollContainer = logElement.querySelector("#game-event-log-content") || logElement;
         let userHasScrolledUp = false;
 
         scrollContainer.addEventListener('scroll', () => {
@@ -147,75 +237,208 @@
         });
 
         const observer = new MutationObserver(() => {
+            removeUndefinedEntries(scrollContainer);
             if (!userHasScrolledUp) {
                 scrollContainer.scrollTop = scrollContainer.scrollHeight;
             }
         });
 
+        removeUndefinedEntries(scrollContainer);
         observer.observe(scrollContainer, { childList: true, subtree: true });
 
         logElement.dataset.toggleInitialized = "true";
     }
 
-    // Create floating button to reopen the Event Log panel.
-    function createReopenButton() {
-        if (document.getElementById("btn-reopen-log")) return;
+    let logMirrorObserver;
+    let rightLogUserScrolledUp = false;
 
-        const reopenBtn = document.createElement("button");
-        reopenBtn.id = "btn-reopen-log";
-        reopenBtn.innerText = "📂 Open Log";
-        reopenBtn.style.cssText = `
-            position: fixed !important;
-            top: 10px !important;
-            right: 15px !important;
-            z-index: 99999 !important;
-            background: #333 !important;
-            color: #fff !important;
-            border: 1px solid #555 !important;
-            padding: 6px 12px !important;
-            border-radius: 4px !important;
-            cursor: pointer !important;
-            font-size: 12px !important;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.5) !important;
-        `;
+    function syncRightLog(sourceLog, logMirror) {
+        const sourceContent = sourceLog.querySelector("#game-event-log-content");
+        const mirrorContent = logMirror.querySelector("#custom-right-panel-log-content");
+        if (!sourceContent || !mirrorContent) return;
 
-        reopenBtn.addEventListener('click', () => {
-            const logElement = document.querySelector("#game-event-log");
-            if (logElement) {
-                logElement.classList.remove('log-closed');
-            }
-            reopenBtn.remove();
-        });
+        const scrollTop = mirrorContent.scrollTop;
+        mirrorContent.replaceChildren(...Array.from(sourceContent.childNodes, (node) => node.cloneNode(true)));
+        removeUndefinedEntries(mirrorContent);
 
-        document.body.appendChild(reopenBtn);
+        if (!rightLogUserScrolledUp) {
+            mirrorContent.scrollTop = mirrorContent.scrollHeight;
+        } else {
+            mirrorContent.scrollTop = scrollTop;
+        }
     }
 
-    // Safely apply structural DOM modifications once elements load.
-    const applyModifications = setInterval(() => {
-        const table3 = document.querySelector("#game-field > tbody > tr > td:nth-child(3) > table");
-        const table1 = document.querySelector("#game-field > tbody > tr > td:nth-child(1) > table");
-        const logElement = document.querySelector("#game-event-log");
-
-        if (table1 && logElement) {
-            if (table3 && table1.parentNode) {
-                table1.parentNode.insertBefore(table3, table1);
-            }
-
-            const targetRow = document.querySelector("#game-field > tbody > tr > td:nth-child(1) > table:nth-child(2) > tbody > tr:nth-child(1)");
-            const rowContainer = document.querySelector("#game-field > tbody > tr > td:nth-child(1) > table:nth-child(2) > tbody");
-            if (targetRow && rowContainer) {
-                rowContainer.appendChild(targetRow);
-            }
-
-            const oldColumn = document.querySelector("#game-field > tbody > tr > td:nth-child(3)");
-            if (oldColumn) oldColumn.remove();
-
-            const originalEventLogBtn = document.querySelector("#game-button-event-log");
-            if (originalEventLogBtn) originalEventLogBtn.remove();
-
-            setupEventLogPanel(logElement);
-
-            clearInterval(applyModifications);
+    function setupRightPanel(logElement, shouldShow) {
+        let panel = document.getElementById("custom-right-panel");
+        if (!shouldShow || !logElement) {
+            if (panel) panel.hidden = true;
+            return;
         }
-    }, 250);
+
+        if (!panel) {
+            panel = document.createElement("section");
+            panel.id = "custom-right-panel";
+
+            const body = document.createElement("div");
+            body.id = "custom-right-panel-body";
+
+            const logMirror = logElement.cloneNode(true);
+            logMirror.id = "custom-right-panel-log";
+            logMirror.removeAttribute("hidden");
+            logMirror.removeAttribute("data-toggle-initialized");
+            logMirror.classList.remove("log-closed");
+            logMirror.style.removeProperty("display");
+            const logContent = logMirror.querySelector("#game-event-log-content");
+            if (logContent) logContent.id = "custom-right-panel-log-content";
+            body.appendChild(logMirror);
+
+            panel.appendChild(body);
+            document.body.appendChild(panel);
+
+            const mirrorContent = logMirror.querySelector("#custom-right-panel-log-content");
+            if (mirrorContent) {
+                mirrorContent.addEventListener("scroll", () => {
+                    const distanceFromBottom = mirrorContent.scrollHeight
+                        - mirrorContent.scrollTop
+                        - mirrorContent.clientHeight;
+                    rightLogUserScrolledUp = distanceFromBottom > 40;
+                });
+            }
+
+            logMirrorObserver = new MutationObserver(() => syncRightLog(logElement, logMirror));
+            const sourceContent = logElement.querySelector("#game-event-log-content");
+            if (sourceContent) {
+                logMirrorObserver.observe(sourceContent, { childList: true, characterData: true, subtree: true });
+            }
+            syncRightLog(logElement, logMirror);
+        }
+
+        panel.hidden = false;
+        setupEventLogPanel(logElement);
+    }
+
+    function applyLayoutModifications() {
+        const gameField = document.querySelector("#game-field");
+        const gameRow = gameField && gameField.querySelector(":scope > tbody > tr");
+        if (!gameRow) return;
+
+        const sideCells = Array.from(gameRow.children)
+            .filter((cell) => cell.classList.contains("empty-game-field-zone-full"));
+        const leftCell = sideCells[0];
+        const rightCell = sideCells[1];
+        let layoutChanged = false;
+
+        if (leftCell && rightCell) {
+            const leftTable = leftCell.querySelector(":scope > table");
+            const rightTable = rightCell.querySelector(":scope > table");
+
+            if (leftTable && rightTable) {
+                leftCell.insertBefore(rightTable, leftTable);
+                rightCell.remove();
+                layoutChanged = true;
+            }
+        }
+
+        if (layoutChanged) {
+            const sideTables = leftCell.querySelectorAll(":scope > table");
+            const rowContainer = sideTables[1]?.tBodies[0];
+
+            if (rowContainer && rowContainer.dataset.layoutReordered !== "true") {
+                const firstRow = rowContainer.rows[0];
+                if (firstRow) rowContainer.appendChild(firstRow);
+                rowContainer.dataset.layoutReordered = "true";
+            }
+            gameRow.dataset.customLayoutApplied = "true";
+        }
+    }
+
+    let observedPlayArea = null;
+    let playAreaResizeObserver = null;
+
+    function updateGameFieldCenter() {
+        if (!observedPlayArea) return;
+
+        const fieldBounds = observedPlayArea.getBoundingClientRect();
+        if (fieldBounds.width === 0 || fieldBounds.height === 0) return;
+
+        const fieldCenterX = Math.round(fieldBounds.left + fieldBounds.width / 2);
+        const fieldCenterY = Math.round(fieldBounds.top + fieldBounds.height / 2);
+        document.documentElement.style.setProperty("--custom-field-center-x", `${fieldCenterX}px`);
+        document.documentElement.style.setProperty("--custom-field-center-y", `${fieldCenterY}px`);
+    }
+
+    function observePlayArea(playArea) {
+        if (playArea === observedPlayArea) return;
+
+        if (playAreaResizeObserver) playAreaResizeObserver.disconnect();
+        observedPlayArea = playArea;
+        playAreaResizeObserver = null;
+
+        if (!playArea) return;
+
+        playAreaResizeObserver = new ResizeObserver(updateGameFieldCenter);
+        playAreaResizeObserver.observe(playArea);
+        updateGameFieldCenter();
+    }
+
+    function applyModifications() {
+        const gameField = document.querySelector("#game-field");
+        const playArea = document.querySelector("#game-field-background-div");
+        const leftPanel = document.querySelector("#card-column");
+        const leftPanelHeader = document.querySelector("#card-column-header-content .game-card-tab");
+        const logElement = document.querySelector("#game-event-log");
+        const leftPanelVisible = Boolean(
+            leftPanel
+            && leftPanelHeader
+            && leftPanelHeader.getBoundingClientRect().width > 0
+            && leftPanelHeader.getBoundingClientRect().height > 0
+            && getComputedStyle(leftPanel).display !== "none"
+            && getComputedStyle(leftPanel).visibility !== "hidden"
+        );
+        applyLayoutModifications();
+        observePlayArea(playArea);
+
+        const playerDeck = document.getElementById("game-field-player-deck");
+        if (playerDeck && gameField) {
+            const deckBounds = playerDeck.getBoundingClientRect();
+            const fieldBounds = gameField.getBoundingClientRect();
+            if (deckBounds.width > 0 && fieldBounds.width > 0) {
+                const fieldWidth = Math.max(0, deckBounds.right - fieldBounds.left);
+                document.documentElement.style.setProperty(
+                    "--custom-game-field-width",
+                    `${fieldWidth}px`
+                );
+                const sidePanelWidth = Math.max(0, (window.innerWidth - fieldWidth - 15) / 2);
+                if (leftPanel) {
+                    document.documentElement.style.setProperty(
+                        "--custom-side-panel-width",
+                        `${sidePanelWidth}px`
+                    );
+                }
+                document.documentElement.style.setProperty(
+                    "--custom-right-panel-width",
+                    `${sidePanelWidth}px`
+                );
+            }
+        }
+
+        updateGameFieldCenter();
+        setupRightPanel(logElement, leftPanelVisible);
+    }
+
+    let modificationsScheduled = false;
+    function scheduleApplyModifications() {
+        if (modificationsScheduled) return;
+        modificationsScheduled = true;
+        requestAnimationFrame(() => {
+            modificationsScheduled = false;
+            applyModifications();
+        });
+    }
+
+    applyModifications();
+
+    const pageObserver = new MutationObserver(scheduleApplyModifications);
+    pageObserver.observe(document.body, { childList: true, subtree: true });
+    window.addEventListener("resize", scheduleApplyModifications);
 })();
