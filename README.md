@@ -9,7 +9,7 @@ A Tampermonkey userscript for **DuelingNexus** that adjusts the duel layout and 
 ## Features
 
 * **Custom Duel Layout:** Repositions and resizes the game field and side panels to make better use of the available screen space.
-* **Right-Side Event Log:** Moves the original event log into a dedicated right-side panel and removes its redundant tab from the left panel.
+* **Right-Side Event Log:** Moves the original event log into a dedicated right-side panel.
 
 ---
 
