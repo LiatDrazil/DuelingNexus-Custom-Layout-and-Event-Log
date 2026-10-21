@@ -30,11 +30,3 @@ The script runs automatically on:
 
 * `https://duelingnexus.com/duel/*`
 * `https://duelingnexus.com/handtestmode*`
-
----
-
-## Usage
-
-After installation, open a supported DuelingNexus page. The layout changes are applied automatically; no in-game settings panel is required.
-
-During a duel, the original event log appears on the right when the card panel is visible. The remaining tabs on the left expand evenly to use the available space. Scroll the log to review previous events; it resumes following new events when you return to the bottom.
